@@ -101,90 +101,60 @@ function PremiumTelemetryOverlay() {
   const currentScenario = useSimulationStore((s) => s.currentScenario);
   const metrics = useSimulationStore((s) => s.metrics);
 
-  const formatScenario = (s: string) => {
-    return s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  };
+  const isScanning = simulationState === "SCANNING";
+  const isNetworkScenario = currentScenario === "multi_tenant_isolation";
+  const isValidationScenario = currentScenario !== "multi_tenant_isolation";
+
+  const riskColor = aggregatedRisk > 80 ? 'text-red-600' : aggregatedRisk > 50 ? 'text-amber-600' : 'text-emerald-600';
+  const riskDot = aggregatedRisk > 80 ? 'bg-red-500' : aggregatedRisk > 50 ? 'bg-amber-500' : 'bg-emerald-500';
+  const webhookActive = visuals.coreAura !== "neutral" && visuals.coreAura !== "success";
 
   return (
-    <div className="absolute top-[100px] md:top-[88px] inset-x-0 z-40 flex gap-4 px-4 md:justify-center pointer-events-none overflow-x-auto custom-scrollbar pb-4 md:pb-0 snap-x snap-mandatory">
-      
-      {/* AEGIS Engine */}
-      <div className="shrink-0 snap-center bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.06)] min-w-[220px] flex flex-col gap-3">
-        <div className="flex items-center gap-2 border-b border-slate-200/60 pb-2.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-800">AEGIS Engine</span>
-        </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-3.5 mt-0.5">
-          <div className="flex flex-col">
-            <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold mb-1">Latency</span>
-            <span className="text-[12px] font-mono font-bold text-slate-800">{metrics.latency}ms</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold mb-1">Cache Hit</span>
-            <span className="text-[12px] font-mono font-bold text-emerald-600">99.4%</span>
-          </div>
-          <div className="flex flex-col col-span-2">
-            <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold mb-1">Webhook Status</span>
-            <span className={`text-[11px] font-mono font-bold ${visuals.coreAura !== "neutral" && visuals.coreAura !== "success" ? "text-blue-600" : "text-slate-600"}`}>
-              {visuals.coreAura !== "neutral" && visuals.coreAura !== "success" ? "ACTIVE / INTERCEPTING" : "ONLINE / STANDBY"}
-            </span>
-          </div>
-        </div>
-      </div>
+    <div className={`absolute top-4 inset-x-0 z-40 flex gap-2 px-4 md:justify-center pointer-events-none transition-all duration-700 ${isScanning ? 'opacity-25' : 'opacity-100'}`}>
 
-      {/* Risk & Policy */}
-      <div className="shrink-0 snap-center bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.06)] min-w-[220px] flex flex-col gap-3">
-        <div className="flex items-center gap-2 border-b border-slate-200/60 pb-2.5">
-          <div className={`w-1.5 h-1.5 rounded-full ${aggregatedRisk > 80 ? 'bg-red-500' : aggregatedRisk > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-800">Risk & Policy</span>
+      {/* AEGIS Engine — validation scenarios only */}
+      {isValidationScenario && (
+        <div className="flex items-center gap-2.5 bg-white/75 backdrop-blur-md border border-slate-200/50 rounded-full px-3 py-1.5 shadow-sm">
+          <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${webhookActive ? 'bg-blue-500 animate-pulse' : 'bg-slate-300'}`} />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Webhook</span>
+          <span className={`text-[10px] font-mono font-bold ${webhookActive ? 'text-blue-600' : 'text-slate-500'}`}>
+            {webhookActive ? 'ACTIVE' : 'STANDBY'}
+          </span>
+          <span className="text-slate-200">|</span>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Latency</span>
+          <span className="text-[10px] font-mono font-bold text-slate-700">{metrics.latency}ms</span>
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-3.5 mt-0.5">
-          <div className="flex flex-col">
-            <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold mb-1">Risk Level</span>
-            <span className={`text-[12px] font-mono font-bold ${aggregatedRisk > 80 ? 'text-red-600' : aggregatedRisk > 50 ? 'text-amber-600' : 'text-emerald-600'}`}>
-              {Math.round(aggregatedRisk)} / 100
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold mb-1">Evaluation</span>
-            <span className="text-[12px] font-mono font-bold text-slate-800">
-              {simulationState === "SCANNING" ? "ANALYZING..." : simulationState === "PLAYING" ? "ENFORCING" : "IDLE"}
-            </span>
-          </div>
-          <div className="flex flex-col col-span-2">
-            <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold mb-1">Tenant Isolation</span>
-            <span className={`text-[11px] font-mono font-bold ${visuals.isolationBarrier.shieldWall ? "text-amber-600" : visuals.isolationBarrier.active ? "text-cyan-600" : "text-slate-500"}`}>
-              {visuals.isolationBarrier.shieldWall ? "DYNA-SHIELD ACTIVE" : visuals.isolationBarrier.active ? "DEFAULT-DENY ENFORCED" : "OPEN SEGMENT"}
-            </span>
-          </div>
-        </div>
-      </div>
+      )}
 
-      {/* Network Context */}
-      <div className="shrink-0 snap-center bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.06)] min-w-[220px] flex flex-col gap-3">
-        <div className="flex items-center gap-2 border-b border-slate-200/60 pb-2.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-800">Network Context</span>
+      {/* Risk — validation scenarios only */}
+      {isValidationScenario && (
+        <div className="flex items-center gap-2.5 bg-white/75 backdrop-blur-md border border-slate-200/50 rounded-full px-3 py-1.5 shadow-sm">
+          <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${riskDot}`} />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Risk</span>
+          <span className={`text-[11px] font-mono font-bold ${riskColor}`}>{Math.round(aggregatedRisk)}</span>
+          <span className="text-slate-200">|</span>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Policy</span>
+          <span className="text-[10px] font-mono font-bold text-slate-700">
+            {simulationState === "SCANNING" ? "EVAL…" : simulationState === "PLAYING" ? "ENFORCING" : "IDLE"}
+          </span>
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-3.5 mt-0.5">
-          <div className="flex flex-col">
-            <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold mb-1">Flow Vis</span>
-            <span className={`text-[12px] font-mono font-bold ${visuals.networkLineActive ? "text-cyan-600" : "text-slate-500"}`}>
-              {visuals.networkLineActive ? "TCP ESTAB" : "NO FLOW"}
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold mb-1">eBPF Data</span>
-            <span className="text-[12px] font-mono font-bold text-indigo-600">CAPTURED</span>
-          </div>
-          <div className="flex flex-col col-span-2">
-            <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold mb-1">Active Scenario</span>
-            <span className="text-[11px] font-mono font-bold text-slate-800 truncate">
-              {formatScenario(currentScenario)}
-            </span>
-          </div>
+      )}
+
+      {/* Network Context — network scenario only */}
+      {isNetworkScenario && (
+        <div className="flex items-center gap-2.5 bg-white/75 backdrop-blur-md border border-slate-200/50 rounded-full px-3 py-1.5 shadow-sm">
+          <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Flow</span>
+          <span className={`text-[10px] font-mono font-bold ${visuals.networkLineActive ? 'text-cyan-600' : 'text-slate-500'}`}>
+            {visuals.networkLineActive ? 'TCP ESTAB' : 'NO FLOW'}
+          </span>
+          <span className="text-slate-200">|</span>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Isolation</span>
+          <span className={`text-[10px] font-mono font-bold ${visuals.isolationBarrier.shieldWall ? 'text-amber-600' : visuals.isolationBarrier.active ? 'text-cyan-600' : 'text-slate-500'}`}>
+            {visuals.isolationBarrier.shieldWall ? 'SHIELD' : visuals.isolationBarrier.active ? 'ENFORCED' : 'OPEN'}
+          </span>
         </div>
-      </div>
+      )}
 
     </div>
   );
@@ -213,6 +183,10 @@ export default function Home() {
     startSimulation();
   };
 
+  const isNetworkScenario = currentScenario === "multi_tenant_isolation";
+  const isValidationScenario = currentScenario !== "multi_tenant_isolation";
+  const isScanning = useSimulationStore((s) => s.simulationState) === "SCANNING";
+
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-white selection:bg-slate-200">
       <div className="absolute inset-0 z-0">
@@ -225,13 +199,13 @@ export default function Home() {
 
 
         <div className="absolute inset-x-0 top-0 z-50 flex pointer-events-none p-4 md:p-6 items-start justify-between">
-          <aside className="pointer-events-auto hidden md:block w-80">
+          <aside className={`pointer-events-auto hidden md:block w-80 transition-all duration-700 ${!isValidationScenario ? 'opacity-0 -translate-x-4 pointer-events-none absolute' : isScanning ? 'opacity-100 scale-105' : 'opacity-80 hover:opacity-100'}`}>
             <Sidebar />
           </aside>
 
           <WebhookAlert />
 
-          <aside className="pointer-events-auto hidden md:block w-[360px]">
+          <aside className={`pointer-events-auto hidden md:block w-[360px] transition-all duration-700 ${!isNetworkScenario ? 'opacity-0 translate-x-4 pointer-events-none absolute right-6' : isScanning ? 'opacity-100 scale-105 right-6 absolute' : 'opacity-80 hover:opacity-100 absolute right-6'}`}>
             <TelemetryPanel />
           </aside>
         </div>
@@ -337,17 +311,17 @@ export default function Home() {
 
     <div className={`md:hidden fixed inset-x-0 bottom-0 z-[60] bg-white/95 backdrop-blur-xl border-t border-slate-200 shadow-2xl transition-transform duration-300 rounded-t-3xl ${isMobileSheetOpen ? "translate-y-0" : "translate-y-full"}`}>
         <div className="p-4 flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-2">
+          <div className="flex justify-between items-center mb-2 shrink-0">
             <h3 className="font-bold text-slate-900 flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-slate-600" />
-              Telemetry & Rules
+              {isValidationScenario ? "Telemetry & Rules" : "Hubble Network Telemetry"}
             </h3>
-            <button onClick={() => setIsMobileSheetOpen(false)} className="p-2 bg-slate-100 rounded-full text-slate-600">
+            <button onClick={() => setIsMobileSheetOpen(false)} className="p-2 bg-slate-100 rounded-full text-slate-600 shrink-0">
               <X className="w-4 h-4" />
             </button>
           </div>
-          <Sidebar />
-          <TelemetryPanel />
+          {isValidationScenario && <Sidebar />}
+          {isNetworkScenario && <TelemetryPanel />}
         </div>
       </div>
 

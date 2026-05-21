@@ -659,20 +659,22 @@ function DynamicScenarioElements({ spread }: { spread: number }) {
 
   useFrame(({ clock, camera }) => {
     if (escapeRef.current && visuals.pod.type === "escape") {
-      escapeRef.current.rotation.x = clock.getElapsedTime() * 2;
-      escapeRef.current.rotation.y = clock.getElapsedTime() * 3;
+      // Slow, deliberate rotation — feels intelligent, not chaotic
+      escapeRef.current.rotation.x = clock.getElapsedTime() * 0.6;
+      escapeRef.current.rotation.y = clock.getElapsedTime() * 0.9;
     }
     if (textRef.current) {
       textRef.current.quaternion.copy(camera.quaternion);
     }
     if (containmentMatrixRef.current && visuals.pod.blockedAtGateway) {
-      containmentMatrixRef.current.rotation.y = clock.getElapsedTime() * 0.5;
-      containmentMatrixRef.current.rotation.z = clock.getElapsedTime() * 0.2;
+      containmentMatrixRef.current.rotation.y = clock.getElapsedTime() * 0.25;
+      containmentMatrixRef.current.rotation.z = clock.getElapsedTime() * 0.08;
     }
 
     if (groupRef.current) {
       if (visuals.pod.animation === "lunge") {
-        groupRef.current.position.z = visuals.pod.position[2] * spread + Math.sin(clock.getElapsedTime() * 25) * 0.8;
+        // Calm, deliberate probing — security intelligence feel, not chaos
+        groupRef.current.position.z = visuals.pod.position[2] * spread + Math.sin(clock.getElapsedTime() * 4) * 0.25;
       } else {
         groupRef.current.position.z = visuals.pod.position[2] * spread;
       }

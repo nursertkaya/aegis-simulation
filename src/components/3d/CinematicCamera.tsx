@@ -23,6 +23,7 @@ export function CinematicCamera({ layout, controlsRef }: CinematicCameraProps) {
   const defaultTarget = useRef(new THREE.Vector3(0, 0, 0));
   
   const isTransitioningToOverview = useRef(false);
+  const isTransitioningToCinematic = useRef(false);
 
   useEffect(() => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
@@ -34,10 +35,14 @@ export function CinematicCamera({ layout, controlsRef }: CinematicCameraProps) {
   useEffect(() => {
     if (activeCameraMode === "OVERVIEW") {
       isTransitioningToOverview.current = true;
+      isTransitioningToCinematic.current = false;
       if (controlsRef.current) {
         controlsRef.current.enableDamping = true;
         controlsRef.current.dampingFactor = 0.05;
       }
+    } else {
+      isTransitioningToCinematic.current = true;
+      isTransitioningToOverview.current = false;
     }
   }, [activeCameraMode, controlsRef]);
 
@@ -79,34 +84,43 @@ export function CinematicCamera({ layout, controlsRef }: CinematicCameraProps) {
       defaultTarget.current.z
     );
 
+    let shouldLerp = false;
+
     if (isPlaying || isCompleted) {
+      shouldLerp = true;
       if (currentScenario === "secure_admission" || currentScenario === "shadow_ai_drift" || currentScenario === "container_escape" || currentScenario === "stateless_multi_label") {
         if (visuals.pod.visible) {
           const podX = visuals.pod.position[0] * spread;
           const podY = visuals.pod.position[1];
           const podZ = visuals.pod.position[2] * spread;
           
-          // Track the pod
+          // Track the pod - Increased comfort distance
           targetLookAt.set(podX, podY, podZ);
-          targetCamPos.set(podX + 2, podY + 1.5, podZ + 4);
+          targetCamPos.set(podX + 2.5, podY + 2.0, podZ + 6.0);
           
           // If the pod is scanning at the AEGIS gate [0, 0, 0]
           if (visuals.coreAura !== "neutral" && Math.abs(podX) < 0.1) {
-            targetCamPos.set(2, 2, 5); 
+            targetCamPos.set(2.5, 2.5, 6.5); 
             targetLookAt.set(0, 0, 0);
           }
         }
       } else if (currentScenario === "multi_tenant_isolation") {
         // Focus heavily on the lateral attack boundary
         targetLookAt.set(4.5 * spread, 0, 0);
-        targetCamPos.set(11 * spread, 4, 0);
+        targetCamPos.set(12 * spread, 5, 2);
+      }
+    } else if (isTransitioningToCinematic.current) {
+      shouldLerp = true;
+      if (camera.position.distanceTo(targetCamPos) < 0.1) {
+        isTransitioningToCinematic.current = false;
       }
     }
 
-    camera.position.lerp(targetCamPos, 3.5 * delta);
-    controls.target.lerp(targetLookAt, 4.0 * delta);
-    
-    controls.update();
+    if (shouldLerp) {
+      camera.position.lerp(targetCamPos, 3.5 * delta);
+      controls.target.lerp(targetLookAt, 4.0 * delta);
+      controls.update();
+    }
   });
 
   return null;
