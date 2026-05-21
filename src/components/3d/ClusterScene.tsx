@@ -657,12 +657,19 @@ function DynamicScenarioElements({ spread }: { spread: number }) {
   const textRef = useRef<THREE.Group>(null);
   const containmentMatrixRef = useRef<THREE.Mesh>(null);
 
-  useFrame(({ clock, camera }) => {
-    if (escapeRef.current && visuals.pod.type === "escape") {
+  useFrame(({ clock, camera }, delta) => {
+    // --- Escape pod mesh slow rotation (only when not blocked) ---
+    if (escapeRef.current && visuals.pod.type === "escape" && !visuals.pod.blockedAtGateway) {
       // Slow, deliberate rotation — feels intelligent, not chaotic
       escapeRef.current.rotation.x = clock.getElapsedTime() * 0.6;
       escapeRef.current.rotation.y = clock.getElapsedTime() * 0.9;
     }
+    if (escapeRef.current && visuals.pod.blockedAtGateway) {
+      // Freeze rotation to zero when blocked — deliberate containment
+      escapeRef.current.rotation.x = THREE.MathUtils.lerp(escapeRef.current.rotation.x, 0, 8 * delta);
+      escapeRef.current.rotation.y = THREE.MathUtils.lerp(escapeRef.current.rotation.y, 0, 8 * delta);
+    }
+
     if (textRef.current) {
       textRef.current.quaternion.copy(camera.quaternion);
     }
@@ -671,12 +678,27 @@ function DynamicScenarioElements({ spread }: { spread: number }) {
       containmentMatrixRef.current.rotation.z = clock.getElapsedTime() * 0.08;
     }
 
+    // --- Pod group position: single authority, no competing sources ---
     if (groupRef.current) {
-      if (visuals.pod.animation === "lunge") {
-        // Calm, deliberate probing — security intelligence feel, not chaos
-        groupRef.current.position.z = visuals.pod.position[2] * spread + Math.sin(clock.getElapsedTime() * 4) * 0.25;
+      const targetX = visuals.pod.position[0] * spread;
+      const targetY = visuals.pod.position[1];
+      const targetZ = visuals.pod.position[2] * spread;
+
+      if (visuals.pod.blockedAtGateway) {
+        // Hard lerp to exact frozen position — eliminates all jitter
+        groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, 12 * delta);
+        groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 12 * delta);
+        groupRef.current.position.z = THREE.MathUtils.lerp(groupRef.current.position.z, targetZ, 12 * delta);
+      } else if (visuals.pod.animation === "lunge") {
+        // Calm, deliberate probing — add gentle Z oscillation only
+        groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, 10 * delta);
+        groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 10 * delta);
+        groupRef.current.position.z = targetZ + Math.sin(clock.getElapsedTime() * 4) * 0.25;
       } else {
-        groupRef.current.position.z = visuals.pod.position[2] * spread;
+        // Normal movement: lerp smoothly to store-driven position
+        groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, 10 * delta);
+        groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 10 * delta);
+        groupRef.current.position.z = THREE.MathUtils.lerp(groupRef.current.position.z, targetZ, 10 * delta);
       }
     }
   });
@@ -686,7 +708,8 @@ function DynamicScenarioElements({ spread }: { spread: number }) {
   return (
     <group>
       {visuals.pod.visible && (
-        <group ref={groupRef} position={[visuals.pod.position[0] * spread, visuals.pod.position[1], visuals.pod.position[2] * spread]}>
+        // No position prop here — position is driven exclusively by useFrame to prevent conflicts
+        <group ref={groupRef}>
           <mesh 
             position={[0, 0.4, 0]} 
             ref={visuals.pod.type === "escape" ? escapeRef : null} 
