@@ -49,10 +49,20 @@ function OutsideWorld({ spread }: { spread: number }) {
 
   return (
     <group position={[-6 * spread, 0, 0]} ref={groupRef}>
-      <mesh position={[0, -0.2, 0]} receiveShadow>
-        <cylinderGeometry args={[1.5, 1.5, 0.1, 32]} />
-        <meshStandardMaterial ref={matRef} color="#f8fafc" emissive="#94a3b8" emissiveIntensity={0.05} roughness={0.1} />
-        <Edges color="#1e293b" />
+      <mesh position={[0, -0.2, 0]} receiveShadow castShadow>
+        <cylinderGeometry args={[1.5, 1.5, 0.12, 48]} />
+        {/* Premium clearcoat surface — soft industrial platform feel */}
+        <meshPhysicalMaterial
+          ref={matRef as any}
+          color="#f8fafc"
+          emissive="#94a3b8"
+          emissiveIntensity={0.05}
+          roughness={0.25}
+          metalness={0.2}
+          clearcoat={0.6}
+          clearcoatRoughness={0.2}
+        />
+        <Edges color="#94a3b8" threshold={15} />
       </mesh>
       
       <Html position={[0, -0.6, 0]} center>
@@ -303,23 +313,24 @@ function AegisCoreSystem({ spread }: { spread: number }) {
     <group position={[0, 0.5, 0]} ref={coreGroupRef}>
         <PolicyValidationLayer />
         <BehavioralDriftLayer />
-        {/* Güçlü Mavi Kapı Kalkanı (Strong Portal Ring) */}
+        {/* Portal ring — premium metallic finish, restrained glow */}
         <mesh rotation={[0, Math.PI / 2, 0]}>
           <ringGeometry args={[0.6, 1.4, 64]} />
-          <meshStandardMaterial color={baseColor} emissive={baseColor} emissiveIntensity={emissiveInt} transparent opacity={0.4} side={THREE.DoubleSide} />
+          <meshStandardMaterial color={baseColor} emissive={baseColor} emissiveIntensity={emissiveInt * 0.6} transparent opacity={0.25} side={THREE.DoubleSide} depthWrite={false} />
         </mesh>
         
         <mesh ref={axis1} castShadow>
-          <torusGeometry args={[0.8, 0.02, 16, 64]} />
-          <meshStandardMaterial color={baseColor} emissive={baseColor} emissiveIntensity={emissiveInt} metalness={0.8} roughness={0.2} transparent opacity={0.8} />
+          <torusGeometry args={[0.8, 0.018, 16, 128]} />
+          <meshPhysicalMaterial color={baseColor} emissive={baseColor} emissiveIntensity={emissiveInt * 0.7} metalness={0.9} roughness={0.15} clearcoat={1.0} clearcoatRoughness={0.1} transparent opacity={0.9} />
         </mesh>
         <mesh ref={axis2} castShadow>
-          <torusGeometry args={[0.6, 0.02, 16, 64]} />
-          <meshStandardMaterial color={baseColor} emissive={baseColor} emissiveIntensity={emissiveInt} metalness={0.8} roughness={0.2} transparent opacity={0.8} />
+          <torusGeometry args={[0.6, 0.018, 16, 128]} />
+          <meshPhysicalMaterial color={baseColor} emissive={baseColor} emissiveIntensity={emissiveInt * 0.7} metalness={0.9} roughness={0.15} clearcoat={1.0} clearcoatRoughness={0.1} transparent opacity={0.9} />
         </mesh>
+        {/* Core glass sphere — premium transmission */}
         <mesh castShadow>
           <sphereGeometry args={[0.2, 32, 32]} />
-          <meshPhysicalMaterial color="#ffffff" transmission={0.9} roughness={0.1} metalness={0.5} ior={1.5} transparent opacity={0.5} />
+          <meshPhysicalMaterial color="#ffffff" transmission={0.95} roughness={0.05} metalness={0.1} ior={1.6} thickness={0.4} transparent opacity={0.8} />
         </mesh>
         
         {visuals.coreAura !== "neutral" && visuals.coreAura !== "success" && (
@@ -552,16 +563,19 @@ function GrandKubernetesContainer({ spread }: { spread: number }) {
 
   return (
     <group position={[4.5 * spread, 0, 0]}>
-      {/* THE GRAND CONTAINER */}
-      <mesh ref={containerBoxRef} position={[0, 0, 0]} castShadow receiveShadow>
+      {/* Grand cluster boundary — soft translucent box, not a hard cage */}
+      <mesh ref={containerBoxRef} position={[0, 0, 0]} receiveShadow>
         <boxGeometry args={[6 * spread, 8, 6 * spread]} />
-        <meshStandardMaterial 
-          color="#cbd5e1" 
+        <meshPhysicalMaterial 
+          color="#e2e8f0" 
           transparent 
-          opacity={0.15} 
+          opacity={0.06}
+          roughness={0.0}
+          metalness={0.0}
+          transmission={0.5}
           depthWrite={false}
         />
-        <Edges color="#0f172a" />
+        <Edges color="#94a3b8" threshold={15} />
       </mesh>
 
       <Html position={[0, 4.5, 0]} center>
@@ -570,24 +584,26 @@ function GrandKubernetesContainer({ spread }: { spread: number }) {
         </div>
       </Html>
 
+      {/* eBPF floor grid — subtle, not wireframe-dominant */}
       <mesh ref={eBpfGridRef} position={[0, -3.8, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[5.8 * spread, 5.8 * spread, 20, 20]} />
-        <meshBasicMaterial color="#0ea5e9" wireframe transparent opacity={0.6} side={THREE.DoubleSide} />
+        <meshBasicMaterial color="#0ea5e9" wireframe transparent opacity={0.18} side={THREE.DoubleSide} />
       </mesh>
 
       {/* Volumetric Plasma Ribbons System */}
       <VolumetricPlasma spread={spread} shieldWallActive={visuals.isolationBarrier.shieldWall} isImpact={visuals.dataParticles.impact} />
 
       <group ref={tenantAlphaRef} position={[0, 0, -1.2 * spread]}>
-        <gridHelper args={[2.5, 10, "#93c5fd", "#eff6ff"]} position={[0, -0.01, 0]} />
+        {/* Soft grid — less dominant, more atmospheric */}
+        <gridHelper args={[2.5, 8, "#bfdbfe", "#f0f9ff"]} position={[0, -0.01, 0]} />
         <mesh position={[0, -0.1, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
           <planeGeometry args={[2.5, 2.5]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.5} />
-          <Edges color="#1e293b" />
+          <meshPhysicalMaterial color="#eff6ff" transparent opacity={0.6} roughness={0} clearcoat={1} clearcoatRoughness={0} />
+          <Edges color="#93c5fd" threshold={15} />
         </mesh>
         <mesh ref={ciliumRingAlpha} position={[0, 0.4, 0]}>
-          <torusGeometry args={[1.5, 0.02, 16, 64]} />
-          <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={3} transparent opacity={0.8} />
+          <torusGeometry args={[1.5, 0.015, 16, 128]} />
+          <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={2} transparent opacity={0.7} />
         </mesh>
         <Html position={[0, -0.4, 0]} center>
           <div className="text-blue-600 font-bold text-[9px] uppercase tracking-[0.2em] whitespace-nowrap backdrop-blur-sm bg-white/40 px-2 py-0.5 rounded-full shadow-sm border border-blue-100">
@@ -597,15 +613,15 @@ function GrandKubernetesContainer({ spread }: { spread: number }) {
       </group>
 
       <group ref={tenantBetaRef} position={[0, 0, 1.2 * spread]}>
-        <gridHelper args={[2.5, 10, "#6ee7b7", "#ecfdf5"]} position={[0, -0.01, 0]} />
+        <gridHelper args={[2.5, 8, "#a7f3d0", "#f0fdf4"]} position={[0, -0.01, 0]} />
         <mesh position={[0, -0.1, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
           <planeGeometry args={[2.5, 2.5]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.5} />
-          <Edges color="#1e293b" />
+          <meshPhysicalMaterial color="#ecfdf5" transparent opacity={0.6} roughness={0} clearcoat={1} clearcoatRoughness={0} />
+          <Edges color="#6ee7b7" threshold={15} />
         </mesh>
         <mesh ref={ciliumRingBeta} position={[0, 0.4, 0]}>
-          <torusGeometry args={[1.5, 0.02, 16, 64]} />
-          <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={3} transparent opacity={0.8} />
+          <torusGeometry args={[1.5, 0.015, 16, 128]} />
+          <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={2} transparent opacity={0.7} />
         </mesh>
         <Html position={[0, -0.4, 0]} center>
           <div className="text-emerald-600 font-bold text-[9px] uppercase tracking-[0.2em] whitespace-nowrap backdrop-blur-sm bg-white/40 px-2 py-0.5 rounded-full shadow-sm border border-emerald-100">
@@ -726,9 +742,11 @@ function DynamicScenarioElements({ spread }: { spread: number }) {
             <meshPhysicalMaterial 
               color={visuals.pod.badgeColor} 
               emissive={visuals.pod.badgeColor}
-              emissiveIntensity={1.5}
-              clearcoat={1}
-              roughness={0.1}
+              emissiveIntensity={0.8}
+              clearcoat={1.0}
+              clearcoatRoughness={0.1}
+              metalness={0.3}
+              roughness={0.15}
             />
             <Edges color="#0f172a" />
           </mesh>
@@ -830,11 +848,12 @@ function SceneContent({
     <>
       <color attach="background" args={["#ffffff"]} />
       
-      <ambientLight intensity={1.2} color="#ffffff" />
+      <ambientLight intensity={0.9} color="#f8fafc" />
+      {/* Key light — warm directional */}
       <directionalLight
         castShadow
         position={[10, 20, 15]}
-        intensity={2.5}
+        intensity={2.0}
         color="#ffffff"
         shadow-mapSize={[layout.isMobile ? 1024 : 2048, layout.isMobile ? 1024 : 2048]}
         shadow-camera-far={1000}
@@ -844,7 +863,10 @@ function SceneContent({
         shadow-camera-bottom={-20}
         shadow-bias={-0.0001}
       />
-      <directionalLight position={[-10, 8, -10]} intensity={1.5} color="#f8fafc" />
+      {/* Soft fill light — adds depth and prevents flat look */}
+      <directionalLight position={[-8, 6, -12]} intensity={0.8} color="#e0e7ff" />
+      {/* Warm rim light — separates foreground from background */}
+      <directionalLight position={[5, -2, -8]} intensity={0.4} color="#fef3c7" />
 
       <CinematicCamera layout={layout} controlsRef={controlsRef} />
       <SceneControls layout={layout} controlsRef={controlsRef} />
@@ -861,20 +883,20 @@ function SceneContent({
         <planeGeometry args={[100, 100]} />
         <shadowMaterial opacity={0.2} />
       </mesh>
-      <gridHelper args={[100, 100, "#cbd5e1", "#f1f5f9"]} position={[0, -2.5, 0]} />
+      {/* Premium ground — soft mist grid, not construction lines */}
+      <gridHelper args={[100, 60, "#e2e8f0", "#f8fafc"]} position={[0, -2.5, 0]} />
 
       <ContactShadows
         position={[0, -2.49, 0]}
-        opacity={0.15}
-        scale={layout.isMobile ? 20 : 40}
-        blur={2.5}
-        far={10}
-        color="#000000"
+        opacity={0.22}
+        scale={layout.isMobile ? 20 : 45}
+        blur={3.5}
+        far={12}
+        color="#1e293b"
       />
 
-      {!layout.isMobile ? (
-        <Environment preset="studio" environmentIntensity={0.6} />
-      ) : null}
+      {/* Environment reflection on both desktop and mobile (lower intensity on mobile) */}
+      <Environment preset="studio" environmentIntensity={layout.isMobile ? 0.3 : 0.7} />
     </>
   );
 }
