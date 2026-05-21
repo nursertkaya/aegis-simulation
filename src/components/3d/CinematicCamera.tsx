@@ -105,9 +105,10 @@ export function CinematicCamera({ layout, controlsRef }: CinematicCameraProps) {
           }
         }
       } else if (currentScenario === "multi_tenant_isolation") {
-        // Focus heavily on the lateral attack boundary
-        targetLookAt.set(4.5 * spread, 0, 0);
-        targetCamPos.set(12 * spread, 5, 2);
+        // Pull back wider on mobile to keep Dyna-Shield and tenant boundaries both visible
+        const mobileOffset = layout.isMobile ? 2.5 : 0;
+        targetLookAt.set(2 * spread, 0, 0);
+        targetCamPos.set((12 + mobileOffset) * spread, 5 + mobileOffset, 3);
       }
     } else if (isTransitioningToCinematic.current) {
       shouldLerp = true;

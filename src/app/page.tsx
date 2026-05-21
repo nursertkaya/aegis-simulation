@@ -5,48 +5,8 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { TelemetryPanel } from "@/components/layout/TelemetryPanel";
 import { useSimulationStore } from "@/store/simulationStore";
 import { useState, useEffect } from "react";
-import { BarChart3, X, CheckCircle2, CircleDashed, Maximize2, Minimize2 } from "lucide-react";
+import { BarChart3, X, Maximize2, Minimize2 } from "lucide-react";
 
-function MobilePhaseProgressBar() {
-  const currentPhase = useSimulationStore((s) => s.currentPhase);
-  
-  if (currentPhase === 0) return null;
-
-  const phases = [
-    { id: 1, label: "Request" },
-    { id: 2, label: "AEGIS Scan" },
-    { id: 3, label: "Kernel Check" },
-    { id: 4, label: "Deployment" }
-  ];
-
-  return (
-    <div className="md:hidden fixed top-0 inset-x-0 z-[100] bg-white/95 backdrop-blur-md border-b border-slate-200/50 shadow-sm px-4 py-3">
-      <div className="flex items-center justify-between">
-        {phases.map((phase, i) => {
-          const isActive = currentPhase >= phase.id;
-          const isCurrent = currentPhase === phase.id;
-          return (
-            <div key={phase.id} className="flex flex-col items-center gap-1.5 flex-1 relative">
-              {i !== 0 && (
-                <div className={`absolute left-0 top-2 -translate-x-1/2 w-full h-[2px] -z-10 ${isActive ? "bg-blue-500" : "bg-slate-200"}`} />
-              )}
-              <div className="bg-white">
-                {isActive ? (
-                  <CheckCircle2 className={`w-4 h-4 ${isCurrent ? "text-blue-600 animate-pulse" : "text-blue-500"}`} />
-                ) : (
-                  <CircleDashed className="w-4 h-4 text-slate-300" />
-                )}
-              </div>
-              <span className={`text-[8px] uppercase tracking-wider font-bold text-center ${isActive ? "text-slate-800" : "text-slate-400"}`}>
-                {phase.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function WebhookAlert() {
   const alert = useSimulationStore((s) => s.visuals.webhookAlert);
@@ -109,8 +69,12 @@ function PremiumTelemetryOverlay() {
   const riskDot = aggregatedRisk > 80 ? 'bg-red-500' : aggregatedRisk > 50 ? 'bg-amber-500' : 'bg-emerald-500';
   const webhookActive = visuals.coreAura !== "neutral" && visuals.coreAura !== "success";
 
+  const isActive = simulationState !== "IDLE" && simulationState !== "STOPPED";
+  // On mobile during active Scenario 5, suppress overlay entirely — 3D scene is the story
+  const suppressOnMobile = isNetworkScenario && isActive;
+
   return (
-    <div className={`absolute top-4 inset-x-0 z-40 flex gap-2 px-4 md:justify-center pointer-events-none transition-all duration-700 ${isScanning ? 'opacity-25' : 'opacity-100'}`}>
+    <div className={`absolute top-4 inset-x-0 z-40 flex gap-2 px-4 md:justify-center pointer-events-none transition-all duration-700 ${isScanning ? 'opacity-25' : 'opacity-100'} ${suppressOnMobile ? 'hidden md:flex' : ''}`}>
 
       {/* AEGIS Engine — validation scenarios only */}
       {isValidationScenario && (
@@ -212,14 +176,15 @@ export default function Home() {
 
         <PremiumTelemetryOverlay />
 
-        {!isMobileSheetOpen && (
-          <div className="md:hidden fixed top-16 right-4 z-50 pointer-events-auto">
+        {/* Mobile telemetry button — hide during active Scenario 5 to preserve full scene visibility */}
+        {!isMobileSheetOpen && !isNetworkScenario && (
+          <div className="md:hidden fixed top-4 right-4 z-50 pointer-events-auto">
             <button 
               onClick={() => setIsMobileSheetOpen(true)}
-              className="flex items-center gap-2 bg-white/90 backdrop-blur border border-slate-200 shadow-lg px-4 py-2 rounded-full text-xs font-bold text-slate-700"
+              className="flex items-center gap-1.5 bg-white/90 backdrop-blur border border-slate-200 shadow-md px-3 py-1.5 rounded-full text-[11px] font-bold text-slate-700"
             >
-              <BarChart3 className="w-4 h-4 text-blue-600" />
-              View Telemetry
+              <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
+              Rules
             </button>
           </div>
         )}
@@ -255,55 +220,56 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-2 rounded-3xl border border-slate-200/60 bg-white/80 p-2 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] backdrop-blur-xl w-full md:w-auto md:max-w-fit">
+          {/* Scenario selector — horizontal scrollable on mobile, wraps on desktop */}
+          <div className="flex items-center gap-1.5 overflow-x-auto md:flex-wrap md:justify-center rounded-3xl border border-slate-200/60 bg-white/85 px-2 py-2 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] backdrop-blur-xl md:max-w-fit no-scrollbar">
             <button
               onClick={() => handleScenarioClick("secure_admission")}
-              className={`rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+              className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition ${
                 currentScenario === "secure_admission" ? "bg-cyan-600 text-white" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              Scenario 1
+              S1
             </button>
             <button
               onClick={() => handleScenarioClick("shadow_ai_drift")}
-              className={`rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+              className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition ${
                 currentScenario === "shadow_ai_drift" ? "bg-red-600 text-white" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              Scenario 2
+              S2
             </button>
             <button
               onClick={() => handleScenarioClick("stateless_multi_label")}
-              className={`rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+              className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition ${
                 currentScenario === "stateless_multi_label" ? "bg-purple-600 text-white" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              Scenario 3
+              S3
             </button>
             <button
               onClick={() => handleScenarioClick("container_escape")}
-              className={`rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+              className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition ${
                 currentScenario === "container_escape" ? "bg-orange-500 text-white" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              Scenario 4
+              S4
             </button>
             <button
               onClick={() => handleScenarioClick("multi_tenant_isolation")}
-              className={`rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+              className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition ${
                 currentScenario === "multi_tenant_isolation" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              Scenario 5
+              S5
             </button>
             
-            <div className="mx-1 h-5 w-px bg-slate-300" />
+            <div className="mx-1 h-4 w-px bg-slate-300 shrink-0" />
             
             <button
               onClick={() => handleScenarioClick("critical_reset")}
-              className="rounded-full px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition"
+              className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
             >
-              Reset Array
+              ↺
             </button>
           </div>
         </div>
